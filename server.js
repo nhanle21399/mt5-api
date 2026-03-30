@@ -20,20 +20,42 @@ app.post("/update", (req, res) => {
   try {
     const data = req.body;
 
-    // Kiểm tra performance + trades
-    if (!data.performance || !data.trades) {
-      console.log("Invalid data received:", data);
-      return res.sendStatus(400);
+    if (!data.trades) return res.sendStatus(400);
+
+    let trades = data.trades;
+
+    function isTodayVN(timestamp) {
+      const now = new Date();
+      const vnNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+
+      const tradeDate = new Date(timestamp * 1000);
+      const vnTrade = new Date(tradeDate.getTime() + 7 * 60 * 60 * 1000);
+
+      return vnNow.toDateString() === vnTrade.toDateString();
     }
 
-    latestTrade = data;
+    let tradesTodayList = trades.filter(t => isTodayVN(t.time));
 
-    console.log("New performance:", latestTrade.performance);
-    console.log("New trades:", latestTrade.trades);
+    let profitToday = tradesTodayList.reduce((sum, t) => sum + (t.profit || 0), 0);
+
+    let wins = trades.filter(t => t.profit > 0).length;
+    let total = trades.length;
+
+    let winrate = total > 0 ? (wins / total) * 100 : 0;
+
+    latestTrade = {
+      performance: {
+        balance: data.performance?.balance || 0,
+        winrate: Number(winrate.toFixed(1)),
+        tradesToday: tradesTodayList.length,
+        profitToday: Number(profitToday.toFixed(2))
+      },
+      trades
+    };
 
     res.sendStatus(200);
   } catch (err) {
-    console.log("Parse error:", err);
+    console.log(err);
     res.sendStatus(400);
   }
 });
