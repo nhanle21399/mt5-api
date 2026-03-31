@@ -16,32 +16,35 @@ let latestTrade = {
 app.post("/update", (req, res) => {
   let data;
   try {
-    data = JSON.parse(req.body);  // parse raw body JSON
+    data = JSON.parse(req.body);
   } catch(e) {
     console.log("Parse error:", e, "RAW:", req.body);
     return res.sendStatus(400);
   }
 
-  if (!data.performance || !Array.isArray(data.trades)) {
-    console.log("Invalid data:", data);
-    return res.sendStatus(400);
-  }
+  if (!data.performance || !Array.isArray(data.trades)) return res.sendStatus(400);
 
   const trades = data.trades;
-  const tradesToday = trades.length;
-  const profitToday = trades.reduce((sum,t)=>sum+(t.profit||0),0);
-  const wins = trades.filter(t=>t.profit>0).length;
-  const winrate = tradesToday>0 ? (wins/tradesToday)*100 : 0;
+  if(trades.length>0){
+    // chỉ cập nhật performance khi có trades hôm nay
+    const tradesToday = trades.length;
+    const profitToday = trades.reduce((sum,t)=>sum+(t.profit||0),0);
+    const wins = trades.filter(t=>t.profit>0).length;
+    const winrate = tradesToday>0 ? (wins/tradesToday)*100 : 0;
 
-  latestTrade = {
-    performance: {
-      balance: Number((data.performance.balance||0).toFixed(2)),
-      winrate: Number(winrate.toFixed(1)),
-      tradesToday,
-      profitToday: Number(profitToday.toFixed(2))
-    },
-    trades
-  };
+    latestTrade = {
+      performance: {
+        balance: Number((data.performance.balance||0).toFixed(2)),
+        winrate: Number(winrate.toFixed(1)),
+        tradesToday,
+        profitToday: Number(profitToday.toFixed(2))
+      },
+      trades
+    };
+  } else {
+    // chỉ cập nhật balance nếu trades rỗng
+    latestTrade.performance.balance = Number((data.performance.balance||0).toFixed(2));
+  }
 
   return res.sendStatus(200);
 });
