@@ -25,18 +25,13 @@ app.post("/update", (req, res) => {
       return res.sendStatus(400);
     }
 
-    // -------- Compute tradesToday & profitToday --------
     const trades = data.trades;
 
-    // tradesToday: number of open positions
-    const tradesToday = trades.length;
-
-    // profitToday: sum of profits (open positions)
+    // --- Tính performance dựa trên live positions ---
+    const tradesToday = trades.length; // số vị thế mở
     const profitToday = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
-
-    // winrate by positions (open)
     const wins = trades.filter(t => t.profit > 0).length;
-    const winrate   = tradesToday > 0 ? (wins / tradesToday) * 100 : 0;
+    const winrate = tradesToday > 0 ? (wins / tradesToday) * 100 : 0;
 
     latestTrade = {
       performance: {
