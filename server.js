@@ -4,7 +4,7 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors());
-app.use(express.json()); // parse JSON
+app.use(express.json());
 
 let latestTrade = {
   performance: {
@@ -20,47 +20,39 @@ app.post("/update", (req, res) => {
   try {
     const data = req.body;
 
-    if (!data.trades) return res.sendStatus(400);
-
-    let trades = data.trades;
-
-    function isTodayVN(timestamp) {
-      const now = new Date();
-      const vnNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-
-      const tradeDate = new Date(timestamp * 1000);
-      const vnTrade = new Date(tradeDate.getTime() + 7 * 60 * 60 * 1000);
-
-      return vnNow.toDateString() === vnTrade.toDateString();
+    if (!data.performance || !Array.isArray(data.trades)) {
+      console.log("Invalid data:", data);
+      return res.sendStatus(400);
     }
 
-    let tradesTodayList = trades.filter(t => isTodayVN(t.time));
+    // -------- Compute tradesToday & profitToday --------
+    const trades = data.trades;
 
-    let profitToday = tradesTodayList.reduce((sum, t) => sum + (t.profit || 0), 0);
+    // tradesToday: number of open positions
+    const tradesToday = trades.length;
 
-    let wins = trades.filter(t => t.profit > 0).length;
-    let total = trades.length;
+    // profitToday: sum of profits (open positions)
+    const profitToday = trades.reduce((sum, t) => sum + (t.profit || 0), 0);
 
-    let winrate = total > 0 ? (wins / total) * 100 : 0;
+    // winrate by positions (open)
+    const wins = trades.filter(t => t.profit > 0).length;
+    const winrate   = tradesToday > 0 ? (wins / tradesToday) * 100 : 0;
 
     latestTrade = {
-  performance: {
-    balance: data.performance?.balance || 0,
-    winrate: Number(winrate.toFixed(1)),
-    tradesToday: tradesTodayList.length,
-    profitToday: Number(profitToday.toFixed(2))
-  },
+      performance: {
+        balance: Number((data.performance.balance || 0).toFixed(2)),
+        winrate: Number(winrate.toFixed(1)),
+        tradesToday,
+        profitToday: Number(profitToday.toFixed(2))
+      },
+      trades
+    };
 
-  // 🔥 GIỮ TRADE CŨ nếu không có trade mới
-  trades: (trades && trades.length > 0)
-    ? trades
-    : latestTrade.trades
-};
+    return res.sendStatus(200);
 
-    res.sendStatus(200);
   } catch (err) {
-    console.log(err);
-    res.sendStatus(400);
+    console.error("POST /update error:", err);
+    return res.sendStatus(500);
   }
 });
 
