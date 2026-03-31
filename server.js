@@ -44,14 +44,18 @@ app.post("/update", (req, res) => {
     let winrate = total > 0 ? (wins / total) * 100 : 0;
 
     latestTrade = {
-      performance: {
-        balance: data.performance?.balance || 0,
-        winrate: Number(winrate.toFixed(1)),
-        tradesToday: tradesTodayList.length,
-        profitToday: Number(profitToday.toFixed(2))
-      },
-      trades
-    };
+  performance: {
+    balance: data.performance?.balance || 0,
+    winrate: Number(winrate.toFixed(1)),
+    tradesToday: tradesTodayList.length,
+    profitToday: Number(profitToday.toFixed(2))
+  },
+
+  // 🔥 GIỮ TRADE CŨ nếu không có trade mới
+  trades: (trades && trades.length > 0)
+    ? trades
+    : latestTrade.trades
+};
 
     res.sendStatus(200);
   } catch (err) {
