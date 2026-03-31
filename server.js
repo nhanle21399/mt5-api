@@ -2,10 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-
 app.use(cors());
-
-// middleware parse raw text
 app.use(express.text({ type: '*/*' }));
 
 let latestTrade = {
@@ -22,11 +19,14 @@ app.post("/update", (req, res) => {
     return res.sendStatus(400);
   }
 
-  if (!data.performance || !Array.isArray(data.trades)) return res.sendStatus(400);
+  if (!data.performance || !Array.isArray(data.trades)) {
+    console.log("Invalid data:", data);
+    return res.sendStatus(400);
+  }
 
   const trades = data.trades;
+
   if(trades.length>0){
-    // chỉ cập nhật performance khi có trades hôm nay
     const tradesToday = trades.length;
     const profitToday = trades.reduce((sum,t)=>sum+(t.profit||0),0);
     const wins = trades.filter(t=>t.profit>0).length;
